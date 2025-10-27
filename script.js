@@ -43,6 +43,12 @@ const productos = {
 
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
+function actualizarVistaCarrito() {
+    guardarCarrito();
+    mostrarCarrito();
+    actualizarContador();
+}
+
 function guardarCarrito() {
     localStorage.setItem("carrito", JSON.stringify(carrito));
 }
@@ -63,9 +69,18 @@ function agregarProducto(nombre, precio) {
     } else {
         carrito.push({ nombre, precio, cantidad: 1 });
     }
-    guardarCarrito();
-    actualizarContador();
-    mostrarCarrito();
+    
+    actualizarVistaCarrito();
+    
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: `${nombre} añadido al carrito`,
+        showConfirmButton: false,
+        timer: 1500,
+        timerProgressBar: true
+    });
 }
 
 function mostrarCarrito() {
@@ -85,10 +100,12 @@ function mostrarCarrito() {
 
         const btnMenos = document.createElement("button");
         btnMenos.textContent = "-";
+        btnMenos.className = "btn-carrito-ajuste";
         btnMenos.addEventListener("click", () => eliminarProducto(index));
 
         const btnMas = document.createElement("button");
         btnMas.textContent = "+";
+        btnMas.className = "btn-carrito-ajuste";
         btnMas.addEventListener("click", () => aumentarProducto(index));
 
         li.appendChild(btnMenos);
@@ -104,44 +121,77 @@ function eliminarProducto(index) {
         carrito[index].cantidad--;
     } else {
         carrito.splice(index, 1);
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Producto eliminado',
+            showConfirmButton: false,
+            timer: 1000
+        });
     }
-    guardarCarrito();
-    mostrarCarrito();
-    actualizarContador();
+    actualizarVistaCarrito();
 }
 
 function aumentarProducto(index) {
     carrito[index].cantidad++;
-    guardarCarrito();
-    mostrarCarrito();
-    actualizarContador();
+    actualizarVistaCarrito();
 }
 
 function vaciarCarrito() {
-    carrito = [];
-    guardarCarrito();
-    mostrarCarrito();
-    actualizarContador();
+    if (carrito.length === 0) {
+        Swal.fire('Información', 'Tu carrito ya está vacío.', 'info');
+        return;
+    }
+    
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: "¡Se eliminarán todos los artículos de tu carrito!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, vaciar carrito',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            carrito = [];
+            actualizarVistaCarrito();
+            Swal.fire(
+                '¡Vaciado!',
+                'Tu carrito ha sido vaciado.',
+                'success'
+            );
+        }
+    });
 }
 
 function comprar() {
-    const mensaje = document.getElementById("mensajeCompra");
-    if (!mensaje) return;
-
     if (carrito.length === 0) {
-        mensaje.textContent = "Tu carrito está vacío.";
+        Swal.fire({
+            icon: 'warning',
+            title: 'Carrito Vacío',
+            text: 'Debes añadir productos antes de comprar.',
+            confirmButtonText: 'Entendido'
+        });
     } else {
         carrito = [];
-        guardarCarrito();
-        mostrarCarrito();
-        actualizarContador();
-        mensaje.textContent = "¡Gracias por tu compra!";
+        actualizarVistaCarrito();
+        
+        Swal.fire({
+            icon: 'success',
+            title: '¡Compra Exitosa!',
+            html: '<h3>¡Gracias por tu compra!</h3><p>Tu pedido será procesado y enviado pronto.</p>',
+            confirmButtonText: 'Aceptar'
+        });
     }
+    
+    const mensaje = document.getElementById("mensajeCompra");
+    if (mensaje) mensaje.textContent = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    mostrarCarrito();
-    actualizarContador();
+    actualizarVistaCarrito();
 
     const btnVaciar = document.getElementById("vaciarCarrito");
     if (btnVaciar) btnVaciar.addEventListener("click", vaciarCarrito);
